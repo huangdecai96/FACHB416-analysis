@@ -1,114 +1,81 @@
 # FACHB-416 analysis code
 
-Code supporting *Morphological plasticity as a potential buffer for gene-family
-shifts in a green alga*. Prepared from the final Science Advances manuscript
-inputs on 12 November 2026. Draft repository version: 1.0.0.
+Analysis and figure-generation scripts supporting *Morphological plasticity as a potential buffer for gene-family shifts in a green alga*.
 
-## Get the matching data
+## Data and setup
 
-Extract `FACHB416-source-data-v1.0.0-draft04.zip` beside this repository:
+Source dataset: *Source data for morphological plasticity and gene-family variation in Tetradesmus obliquus FACHB-416*.
 
-```
+Reserved Figshare DOI: [10.6084/m9.figshare.34995331](https://doi.org/10.6084/m9.figshare.34995331).
+The dataset is currently unpublished; the DOI will become active when the dataset is published. Private access for editors and reviewers is supplied separately with the submission.
+
+Extract `FACHB416_Figure_Data.zip` beside the code folder. If downloading a GitHub source archive, rename the extracted code folder to `FACHB416-analysis` to use the layout below:
+
+```text
 working-folder/
   FACHB416-analysis/
   FACHB416-source-data/
 ```
 
-Repository URLs and DOIs will be added after deposits are created. The data
-archive supplies a README, field inventory, figure mapping and checksum index.
-Raw sequence deposits remain at NGDC: GWHJXYB00000000.1 and CRA053458,
-BioProject PRJCA074263. No reviewer-access credentials are included here.
+The data archive contains a short `README.md` with units and data-specific notes, and `figure_data_map.tsv` linking inputs to manuscript figures. Genome assembly and RNA-seq deposits remain at NGDC under GWHJXYB00000000.1 and CRA053458, respectively (BioProject PRJCA074263).
 
-## Reproduce the final statistics
+Run the commands below from the `FACHB416-analysis` directory. Python package requirements are in [requirements.txt](requirements.txt); tested versions are listed in [environment_verified.txt](environment_verified.txt). R and the packages used by each R script must be installed separately.
 
-Python 3.12 was used for verification. Install dependencies in your own environment:
+## Reproduce statistics
 
-```
+```sh
 python -m pip install -r requirements.txt
 python reproduce_statistics.py --data ../FACHB416-source-data
 Rscript reproduce_growth.R ../FACHB416-source-data
 ```
 
-Python rebuilds set scores from the full VST matrix and membership, Welch/BH24,
-interaction F-tests/BH4, exact correlations/BH28, phenotype ANOVA, CPP, six DEG
-summaries and family-level CAFE consensus counts. R repeats all 18 final 17-day
-logistic fits with 125 starting points, then ANOVA and Tukey comparisons.
+The Python script rebuilds gene-set scores from the VST matrix and membership table, Welch tests with BH24 adjustment, interaction tests with BH4 adjustment, exact Spearman tests with BH28 adjustment, phenotype ANOVA, CPP, DEG counts and CAFE consensus counts. The R script repeats all 18 final 17-day logistic fits, followed by ANOVA and Tukey comparisons.
 
-For the raw-count differential-expression analysis, install DESeq2 through
-Bioconductor separately, then run:
+For differential-expression analysis from raw gene counts, install DESeq2 through Bioconductor and run:
 
-```
+```sh
 Rscript reproduce_deseq2.R ../FACHB416-source-data
 ```
 
-Optional output argument: `python reproduce_statistics.py --data DATA --out NEW_DIR`,
-or `Rscript reproduce_growth.R DATA NEW_DIR` / `Rscript reproduce_deseq2.R DATA NEW_DIR`.
-Outputs go into separate results subdirectories by default. Nonempty output folders
-are refused, so an old run is not overwritten. Input data are never updated.
+The original DESeq2 analysis used R 4.5.2 / DESeq2 1.49.9; the verified replay used R 4.5.1 / DESeq2 1.50.2 and retained all six significant-gene sets and directions. The archived original tables remain the manuscript values.
 
-## Versions and scope
+Optional output arguments are `--out NEW_DIR` for the Python statistics script, or a second positional argument `NEW_DIR` for the growth and DESeq2 scripts. Use new output directories; nonempty output directories are refused. Input data are not modified.
 
-See environment_verified.txt. The original DESeq2 analysis used R 4.5.2 / DESeq2
-1.49.9; replay with R 4.5.1 / DESeq2 1.50.2 retained all six significant-gene sets
-and directions. The accepted original tables remain the submitted values.
-The `figures` folder contains canonical Figure1.R–Figure5.R and final-numbered supplementary scripts. Shared functions actually used by those scripts are in figures/helpers. Upstream scientific methods are in methods/. Old plotting wrappers, duplicate style files, copied test outputs and server packaging utilities are excluded.
+## Reproduce figures
 
-The main pairwise family is **24 tests**, not six separate tests per set.
-Interaction and correlation families remain BH4 and BH28. Historical 15-day fits
-are not an alternative to the final 17-day analysis. Final figure numbers are
-defined in the data archive (the corrected CPP time series is Fig. S6).
+The default runner renders Figures 4 and 5:
 
-Individual-cell dimension records (1,274 observations in 18 cultures) and both
-organelle-map annotation sources are supplied. Dimension sampling and colony
-distribution counting were independent. The dimension table contains sample/cell
-identifiers, lengths, widths and volumes, without colony-category metadata.
-
-The archived plotted volume means are not identical to direct arithmetic means
-of the measured cells. The audit script reports this distinction without changing
-the manuscript inputs. This draft does not assert numerical agreement between
-the two. No manuscript figures or results were changed in this preparation.
-
-Pixel-identical reproduction of every final panel is not claimed. Figure 6 is the final PowerPoint illustration; no R drawing script is included. See Organelles/README.md for the recovered web-map inputs.
-
-## Citation and license
-
-Cite the fixed Figshare code version and associated data DOI after they are
-assigned; a mutable GitHub branch is not the archival citation. The manuscript
-has no publication DOI assigned in this preparation.
-
-Code author and copyright holder: Decai Huang. Copyright (c) 2026 Decai Huang.
-Original project code is licensed under the MIT License; see LICENSE and
-AUTHORS.md. Third-party software and separately identified third-party material
-retain their own licenses. The separate source-data archive uses CC BY 4.0.
-
-
-## Selected final drawing replay
-
-The final Fig. 4 and BH24 Fig. 5 drawing definitions can also be replayed to PDF
-and PNG, without changing the supplied tables or manuscript figures:
-
-```
+```sh
 python reproduce_figures.py --data ../FACHB416-source-data --out ../drawing-check
 ```
 
 Individual figures can be run directly:
 
-```
+```sh
 Rscript figures/Figure4.R ../FACHB416-source-data ../Figure4-output
 Rscript figures/Figure5.R ../FACHB416-source-data ../Figure5-output
 ```
 
-Figure1.R generates the scientific panels before manual PowerPoint edits. Figure2.R exports the retained approved composition rather than substituting an unused redraw; it writes PNG only.
+The `figures/` directory contains `Figure1.R` through `Figure5.R` and scripts named by supplementary figure number. Shared functions are in `figures/helpers/`. The optional runner accepts `--figures` followed by these figure names. Output directories must be new and separate from source data.
 
-The optional runner accepts --figures followed by canonical figure names. Each output directory must be new and separate from source data. The default replay selects Figure4 and Figure5. Shared R packages are ggplot2, patchwork, ragg and base grid; Figure1 also uses circlize; Figure2 uses png. Fonts use Arial. No installed environment is changed by these scripts.
+Figure 1 scripts generate the scientific panels before manual PowerPoint edits. Figure 2 exports and crops the retained approved composition and writes PNG only. Figure 6 was prepared in PowerPoint and has no R drawing script. See [figures/Non_R_figures.md](figures/Non_R_figures.md) for manual composition, Hi-C and web-generated organelle figures. Organelle inputs are under `Organelles/` in the data archive; its root `README.md` and `figure_data_map.tsv` describe their use.
 
-See figures/Non_R_figures.md for the PowerPoint, Hi-C image and web-generated organelle figures. Repackaging keeps the final numerical inputs and selected drawing definitions; final manual layout edits are not claimed to be regenerated automatically.
+R plotting dependencies include ggplot2, patchwork, ragg and base grid; Figure 1 also uses circlize and Figure 2 uses png. Figures use Arial. Final manual layout edits are not regenerated automatically.
 
-## Audit the recovered cell dimensions
+## Scope and data notes
 
-```
+- Pairwise comparisons use one BH family of 24 tests. Interaction and correlation analyses use separate families of 4 and 28 tests. DESeq2 adjustment is within each contrast.
+- Upstream methods are retained in `methods/`; see [methods/README.md](methods/README.md) for their external toolchain and input requirements. The Figshare figure-data archive is not a complete copy of every upstream intermediate.
+- Cell dimensions and colony distributions were measured independently. The dimension table contains 1,274 individual-cell records across 18 cultures, without colony-category metadata. Archived plotted culture-volume means differ from direct arithmetic means of those measurements; this discrepancy remains unresolved. Both tables are retained.
+
+The following command checks measurement counts and dimensions and compares direct cell means with archived plotting values without changing the inputs:
+
+```sh
 python audit_cell_dimensions.py --data ../FACHB416-source-data
 ```
 
-This verifies dimensions and actual counts, computes direct cell means, and
-compares them with archived plotting values without changing either input.
+## Citation and license
+
+Code repository: [huangdecai96/FACHB416-analysis](https://github.com/huangdecai96/FACHB416-analysis). Cite Decai Huang, the release tag and the commit SHA used. The GitHub release identifies a code version; the Figshare DOI above identifies the separate dataset.
+
+Code author and copyright holder: **Decai Huang**. Copyright (c) 2026 Decai Huang. Original project code is licensed under the **MIT License**; see [LICENSE](LICENSE) and [AUTHORS.md](AUTHORS.md). The source-data archive uses **CC BY 4.0**. Third-party software and separately identified third-party material retain their own licenses.
