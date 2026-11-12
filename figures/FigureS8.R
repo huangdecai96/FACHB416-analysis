@@ -1,0 +1,5 @@
+aa<-grep('^--file=',commandArgs(FALSE),value=TRUE)
+source(file.path(dirname(sub('^--file=','',aa[1])),'helpers/setup.R'))
+E5<-new.env(parent=globalenv());E5$rd<-function(n)rd('Expression',n)
+source(file.path(SCRIPT_DIR,'helpers/expression_components.R'),local=E5)
+export_fig('FigureS8',function()print(polish(E5$plot_deg())+labs(tag=NULL)+theme(legend.position='bottom')),95)

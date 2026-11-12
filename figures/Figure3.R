@@ -1,0 +1,11 @@
+aa<-grep('^--file=',commandArgs(FALSE),value=TRUE)
+source(file.path(dirname(sub('^--file=','',aa[1])),'helpers/setup.R'))
+E3<-new.env(parent=globalenv());E3$rd<-function(n)rd('Figure3',n);E3$output_dir<-output_dir;E3$pal<-c(contraction=rose,expansion=blue,candidate=green)
+source(file.path(SCRIPT_DIR,'helpers/family_components.R'),local=E3)
+draw3<-function(){
+ p1<-polish(E3$plot_heatmap())+coord_cartesian(clip="off")+theme(panel.border=element_blank(),axis.line=element_blank(),axis.ticks=element_blank(),axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=7.5),axis.text.y=element_text(size=7.5),legend.position='bottom',legend.title=element_text(size=7.2),legend.text=element_text(size=7.2))
+ p2<-polish(E3$plot_overall())+theme(legend.position='bottom',legend.text=element_text(size=7.2),legend.spacing.x=unit(.5,'mm'),axis.text.x=element_text(size=8))
+ p3<-polish(E3$plot_copies())+theme(axis.text.y=element_text(size=7.5,lineheight=1.0),panel.border=element_blank(),axis.line.x=element_line(linewidth=.45,colour='black'),axis.line.y=element_blank(),axis.ticks.y=element_blank())
+ print(patchwork::free(p1)/(p2+p3+plot_layout(widths=c(1,2.08)))+plot_layout(heights=c(1.45,1))+plot_annotation(theme=theme(plot.margin=margin(3,3,3,3))))
+}
+export_fig('Figure3',draw3,200,600)

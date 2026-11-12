@@ -1,0 +1,7 @@
+aa<-grep('^--file=',commandArgs(FALSE),value=TRUE)
+source(file.path(dirname(sub('^--file=','',aa[1])),'helpers/setup.R'))
+co<-c('LN','HN','LU','HU','LA','HA');cols<-paper_style$condition;shapes<-c(LN=1,HN=16,LU=2,HU=17,LA=0,HA=15);ltys<-c(LN='dashed',HN='solid',LU='dashed',HU='solid',LA='dashed',HA='solid')
+all5<-rd('Expression','S0B_sample_expression.tsv');all5$condition<-factor(all5$condition,levels=co);all5$gene_id<-factor(all5$gene_id,levels=c('g11586','g12701','g12816','g13195','g7484'));all5$x<-as.numeric(all5$condition);all5$xx<-all5$x+c(-.16,0,.16)[as.integer(sub('.*([456])$','\\1',all5$sample))-3];all5$shape<-substr(all5$condition,1,1)
+sm5<-do.call(rbind,lapply(split(all5,list(all5$gene_id,all5$condition),drop=TRUE),function(v)data.frame(gene_id=v$gene_id[1],condition=v$condition[1],mean=mean(v$vst),se=sd(v$vst)/sqrt(nrow(v)),x=v$x[1]+.23)))
+pall5<-ggplot()+geom_point(data=all5,aes(xx,vst,fill=condition,shape=shape),size=1.9,stroke=.3)+geom_errorbar(data=sm5,aes(x=x,ymin=mean-se,ymax=mean+se),width=.12,linewidth=.4)+geom_point(data=sm5,aes(x,mean),shape=18,size=1.6)+facet_wrap(~gene_id,ncol=3,scales='free_y')+scale_x_continuous(breaks=1:6,labels=co)+scale_fill_manual(values=cols,guide='none')+scale_shape_manual(values=paper_style$concentration_shape,guide='none')+labs(x=NULL,y='VST expression')+base_theme()+theme(panel.spacing=unit(7,'mm'),strip.background=element_blank(),strip.text=element_text(size=9,face='bold'))
+export_fig('FigureS10',function()print(pall5),140)

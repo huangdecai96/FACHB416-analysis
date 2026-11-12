@@ -1,0 +1,7 @@
+Python 3.12.14
+numpy 2.3.5
+pandas 3.0.1
+scipy 1.17.1
+Growth replay: R 4.5.1 on Windows
+Archived DESeq2: R 4.5.2, DESeq2 1.49.9
+Verified replay DESeq2: R 4.5.1, DESeq2 1.50.2

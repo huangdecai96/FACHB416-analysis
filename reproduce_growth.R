@@ -1,0 +1,32 @@
+# File-interface adapter; statistical algorithm is unchanged.
+aa <- grep('^--file=', commandArgs(FALSE), value=TRUE)
+repo <- normalizePath(dirname(sub('^--file=', '', aa[1])), winslash='/')
+args <- commandArgs(TRUE)
+d <- if(length(args)>=1) args[1] else file.path(repo,'../FACHB416-source-data')
+d <- normalizePath(d, winslash='/', mustWork=TRUE)
+out <- if(length(args)>=2) args[2] else file.path(repo,'results/growth')
+out <- normalizePath(out,winslash='/',mustWork=FALSE)
+stopifnot(file.exists(file.path(d,'figure_data_map.tsv')))
+stopifnot(out != d, !startsWith(out,paste0(d,'/')), !startsWith(d,paste0(out,'/')))
+if(dir.exists(out) && length(list.files(out,all.files=TRUE,no..=TRUE))) stop('Output folder is nonempty; use a new output folder')
+dir.create(out,recursive=TRUE,showWarnings=FALSE)
+dataroot<-file.path(d,'Growth')
+raw<-read.delim(file.path(dataroot,'counts_Excel_LN_restored.tsv'))
+ref<-read.delim(file.path(dataroot,'replicate_fits.tsv'))
+ans<-list()
+for(cc in c('LN','HN','LU','HU','LA','HA'))for(rr in 1:3){
+ d<-raw[raw$condition==cc & raw$replicate==rr,];d<-d[order(d$day),];my<-max(d$value)
+ grid<-expand.grid(K=my*c(1.02,1.1,1.25,1.5,2),r=c(.15,.3,.45,.7,1),a=c(2,4,6,8,10))
+ fits<-lapply(1:nrow(grid),function(j)tryCatch(suppressWarnings(nls(value~K/(1+exp(a-r*day)),data=d,start=as.list(grid[j,]),algorithm='port',lower=c(K=my*.6,r=1e-5,a=-100),upper=c(K=my*10,r=10,a=100),control=nls.control(maxiter=1000,warnOnly=TRUE,minFactor=1e-12))),error=function(e)NULL))
+ good<-which(vapply(fits,function(f)!is.null(f)&&isTRUE(f$convInfo$isConv),logical(1)));stopifnot(length(good)>0)
+ sse<-vapply(fits[good],function(f)sum(resid(f)^2),numeric(1));ix<-good[which.min(sse)];f<-fits[[ix]];p<-coef(f)
+ ans[[paste(cc,rr)]]<-data.frame(condition=cc,replicate=rr,k=unname(p['K']),r=unname(p['r']),a=unname(p['a']),SSE=sum(resid(f)^2),valid_starts=length(good),selected_start=ix)
+}
+res<-do.call(rbind,ans);rownames(res)<-NULL;cmp<-merge(res,ref,by=c('condition','replicate'),suffixes=c('_new','_ref'))
+for(col in c('k','r','a','SSE')){err<-max(abs(cmp[[paste0(col,'_new')]]-cmp[[paste0(col,'_ref')]]));cat(col,'maximum error',err,'\n');stopifnot(isTRUE(all.equal(cmp[[paste0(col,'_new')]],cmp[[paste0(col,'_ref')]],tolerance=1e-6)))}
+write.table(res,file.path(out,'logistic_fits.tsv'),sep='\t',row.names=FALSE,quote=FALSE)
+tests<-list();pairs<-list()
+for(m in c('r','k')){d<-data.frame(condition=factor(res$condition),value=res[[m]]);fit<-aov(value~condition,d);tests[[m]]<-data.frame(metric=m,p=summary(fit)[[1]][['Pr(>F)']][1]);tk<-TukeyHSD(fit)$condition;pairs[[m]]<-data.frame(metric=m,contrast=rownames(tk),tk,check.names=FALSE)}
+write.table(do.call(rbind,tests),file.path(out,'growth_ANOVA.tsv'),sep='\t',row.names=FALSE,quote=FALSE)
+write.table(do.call(rbind,pairs),file.path(out,'growth_Tukey.tsv'),sep='\t',row.names=FALSE,quote=FALSE)
+capture.output(sessionInfo(),file=file.path(out,'R_sessionInfo.txt'));cat('PASS: all 18 final growth fits reproduced.\n')

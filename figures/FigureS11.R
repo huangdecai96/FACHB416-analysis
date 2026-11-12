@@ -1,0 +1,15 @@
+aa<-grep('^--file=',commandArgs(FALSE),value=TRUE)
+source(file.path(dirname(sub('^--file=','',aa[1])),'helpers/setup.R'))
+gtext<-function(s,x,y,size=8,bold=FALSE,col=ink,just='left')grid.text(s,unit(x,'native'),unit(y,'native'),just=just,gp=gpar(fontfamily='Arial',fontsize=size,col=col,fontface=if(bold)'bold'else'plain',lineheight=1.12))
+gbox<-function(x,y,w,h,fill='#F3F5F6',border='#CDD4DA',lty=1)grid.rect(unit(x+w/2,'native'),unit(y+h/2,'native'),unit(w,'native'),unit(h,'native'),gp=gpar(fill=fill,col=border,lwd=.7,lty=lty))
+loc<-rd('Localization','FACHB416_paper1_round16_S0_DTU_localization_figure_source_data_20260705.tsv');loc_order<-c('Secreted GT','Membrane GT','Secreted wall','Transport membrane','Moderate extracellular','Membrane single','Organelle caution','Weak intracellular');loc<-loc[order(match(loc$integrated_group,loc_order),loc$gene_id),];stopifnot(nrow(loc)==27)
+draw_loc<-function(){page(200);gtext('a',2,5,12,TRUE)
+ xs<-c(3,27,42,59,77,88,105,131);ws<-c(24,15,17,18,11,17,26,47);hh<-c('Protein','CAZyme','SignalP6','DeepTMHMM','TMR','TargetP2','DeepLoc','Integrated group')
+ for(j in 1:8){gbox(xs[j],10,ws[j]-.4,6,'#E7ECF0',NA);gtext(hh[j],xs[j]+.5,13,if(j==4)6.8 else 7.2,TRUE)}
+ for(i in 1:27){d<-loc[i,];yy<-17+(i-1)*4;vals<-c(d$protein_id,d$cazy_family,ifelse(d$signalp6=='OTHER','O',d$signalp6),d$deeptmhmm,d$tmr_n,ifelse(d$targetp2=='OTHER','O',d$targetp2),d$deeploc_group,d$integrated_group);fill<-if(grepl('S0B',d$s0_class))'#DFEEE8'else if(i%%2)'#F2F4F6'else'#FAFBFC';for(j in 1:8){gbox(xs[j],yy,ws[j]-.4,3.8,fill,NA);gtext(vals[j],xs[j]+.5,yy+1.9,7,bold=j==1&&d$gene_id%in%c('g11586','g12816'))}}
+ d<-loc;d$S0B<-ifelse(grepl('S0B',d$s0_class),'S0B','Other S0');ann<-d[d$gene_id%in%c('g11586','g12816'),];ann$lx<-.24;ann$ly<-ifelse(ann$gene_id=='g11586',.91,.68)
+ p1<-ggplot(d,aes(extracellular_score,golgi_score))+geom_abline(slope=1,intercept=0,linetype='dashed',colour='#CCD2D7',linewidth=.35)+geom_point(aes(colour=S0B),size=2)+geom_segment(data=ann,aes(xend=lx,yend=ly),linewidth=.4,colour=muted)+geom_text(data=ann,aes(x=lx,y=ly,label=gene_id),hjust=0,size=2.6,family='Arial')+scale_colour_manual(values=c(S0B=green,'Other S0'='#A4ADB5'),name=NULL)+scale_x_continuous(limits=c(0,1),breaks=c(0,.5,1))+scale_y_continuous(limits=c(0,1),breaks=c(0,.5,1))+labs(tag='b',x='Extracellular score',y='Golgi score')+base_theme()+theme(legend.position='bottom')
+ cc<-as.data.frame(table(factor(d$integrated_group,levels=rev(loc_order))));names(cc)<-c('group','n');p2<-ggplot(cc,aes(n,group))+geom_col(fill='#7B99AE',width=.6)+geom_text(aes(label=n),hjust=-.4,size=2.7,family='Arial')+scale_x_continuous(limits=c(0,8),breaks=c(0,4,8),expand=c(0,0))+labs(tag='c',x='Candidate genes',y=NULL)+base_theme()+theme(axis.text.y=element_text(size=7.5),panel.border=element_blank(),axis.line.x=element_line(linewidth=.45,colour='black'),axis.line.y=element_blank(),axis.ticks.y=element_blank())
+ plot_at(p1,0,130,86,69);plot_at(p2,88,130,90,69);popViewport()
+}
+export_fig('FigureS11',draw_loc,200,600)

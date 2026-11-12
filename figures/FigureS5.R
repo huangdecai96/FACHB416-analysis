@@ -1,0 +1,10 @@
+aa<-grep('^--file=',commandArgs(FALSE),value=TRUE)
+source(file.path(dirname(sub('^--file=','',aa[1])),'helpers/setup.R'))
+E3<-new.env(parent=globalenv());E3$rd<-function(n)rd('Figure3',n);E3$output_dir<-output_dir;E3$pal<-c(contraction=rose,expansion=blue,candidate=green)
+source(file.path(SCRIPT_DIR,'helpers/family_components.R'),local=E3)
+draw_robust<-function(){runs<-E3$runs;ll<-rbind(data.frame(runs[c('replicate','dataset','model')],direction='Contracted',n=runs$contracted_families),data.frame(runs[c('replicate','dataset','model')],direction='Expanded',n=runs$expanded_families));ll$dataset<-factor(ll$dataset,levels=c('original','augmented'),labels=c('Original','Annotation rescue'))
+ p1<-ggplot(ll,aes(model,n,colour=direction,shape=replicate))+geom_point(position=position_dodge(width=.45),size=1.8)+facet_wrap(~dataset,ncol=1)+scale_colour_manual(values=c(Contracted=rose,Expanded=blue),name=NULL)+labs(tag='a',x=NULL,y='Significant families per run')+base_theme()+theme(axis.text.x=element_text(angle=25,hjust=1,size=8),legend.position='bottom',strip.background=element_blank(),strip.text=element_text(size=9))
+ br<-rd('Figure3','stage_terminal_all_species.tsv');br<-br[br$dataset=='original',];br$sp<-factor(br$branch_label,levels=rev(E3$species_order));bl<-rbind(data.frame(br,dir='Contracted',n=br$stable_six_contracted),data.frame(br,dir='Expanded',n=br$stable_six_expanded));p2<-ggplot(bl,aes(n,sp,colour=dir))+geom_point(size=2.2)+scale_colour_manual(values=c(Contracted=rose,Expanded=blue),name=NULL)+scale_y_discrete(labels=setNames(E3$species_labels,E3$species_order))+labs(tag='b',x='Stable families',y=NULL)+base_theme()+theme(axis.text.y=element_text(size=8))
+ page(190);plot_at(p1,0,0,180,100);plot_at(p2,0,105,180,84);popViewport()
+}
+export_fig('FigureS5',draw_robust,190)
