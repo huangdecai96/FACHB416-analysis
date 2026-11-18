@@ -2,7 +2,7 @@
 
 Run: python reproduce_statistics.py --data ../FACHB416-source-data
 Exhaustive six-condition correlations use all 720 permutations. Pairwise Welch
-tests use one BH family of 24; interactions one family of 4; correlations 28.
+tests use one BH family of 24; four one-way ANOVAs one family of 4; correlations 28.
 This script does not refit DESeq2 or the upstream genome assembly.
 """
 from pathlib import Path
@@ -43,25 +43,23 @@ for module,group in membership.groupby('score_module'):
 save(pd.DataFrame(replay),'module_scores_from_VST.tsv')
 
 contrasts={'HN_vs_LN':('HN','LN'),'HU_vs_LU':('HU','LU'),'HA_vs_LA':('HA','LA'),'HU_vs_HN':('HU','HN'),'HA_vs_HN':('HA','HN'),'HA_vs_HU':('HA','HU')}
-rows=[];interactions=[]
+rows=[];oneway=[]
 for module,d in m.groupby('score_module'):
     assert len(d)==18 and (d.groupby('condition').size()==3).all()
     for contrast,(a,b) in contrasts.items():
         x=d.loc[d.condition==a,'score'];y=d.loc[d.condition==b,'score'];t=stats.ttest_ind(x,y,equal_var=False)
         rows.append(dict(score_module=module,contrast=contrast,delta=x.mean()-y.mean(),t=t.statistic,df=t.df,p=t.pvalue))
-    # Compare additive and full source-by-level linear models, F(2,12).
-    source=d.condition.str[1];level=(d.condition.str[0]=='H').astype(float).to_numpy()
-    u=(source=='U').astype(float).to_numpy();a=(source=='A').astype(float).to_numpy()
-    X0=np.column_stack([np.ones(18),u,a,level]);X1=np.column_stack([X0,u*level,a*level]);y=d.score.to_numpy()
-    sse=lambda X:np.sum((y-X@np.linalg.lstsq(X,y,rcond=None)[0])**2)
-    f=((sse(X0)-sse(X1))/2)/(sse(X1)/12)
-    interactions.append(dict(score_module=module,F_interaction=f,p_interaction=stats.f.sf(f,2,12)))
+    # Six nitrogen regimes are the levels of one factor, F(5,12).
+    f,pvalue=stats.f_oneway(*[g.score for _,g in d.groupby('condition')])
+    oneway.append(dict(score_module=module,F=f,P=pvalue,df_between=5,df_within=12))
 out=pd.DataFrame(rows);out['q_BH24']=bh(out.p);out['stars']=np.select([out.q_BH24<.001,out.q_BH24<.01,out.q_BH24<.05],['***','**','*'],default='ns')
 ref=rd('Expression/Pairwise_tests_BH24.tsv');cmp=out.merge(ref,on=['score_module','contrast'],suffixes=('_new','_ref'))
 for col in ['p','q_BH24','delta']:close('Welch_'+col,cmp[col+'_new'],cmp[col+'_ref'])
 save(out,'Pairwise_tests_BH24.tsv')
-it=pd.DataFrame(interactions);it['q_interaction_BH4']=bh(it.p_interaction);cmp=it.merge(rd('Expression/Interaction_BH4_verified.tsv'),on='score_module',suffixes=('_new','_ref'))
-close('Interaction_BH4',cmp.q_interaction_BH4_new,cmp.q_interaction_BH4_ref);save(it,'Interaction_BH4.tsv')
+it=pd.DataFrame(oneway);it['q_BH4']=bh(it.P)
+cmp=it.merge(rd('Expression/GeneSet_OneWay_ANOVA_BH4.tsv'),on='score_module',suffixes=('_new','_ref'))
+for col in ['F','P','q_BH4']:close('GeneSet_ANOVA_'+col,cmp[col+'_new'],cmp[col+'_ref'])
+save(it,'GeneSet_OneWay_ANOVA_BH4.tsv')
 
 c=rd('Phenotype_expression/figure5_correlation_input.tsv');out=[];perm=np.array(list(permutations(range(6))))
 for (module,metric),d in c.groupby(['score_module','metric']):
@@ -101,5 +99,5 @@ branch=rd('Comparative_genomics/replicate_stable_terminal_branch_summary.tsv')
 cmp=branch.merge(agg,on=['dataset','branch_label'],how='left',suffixes=('_ref','_new')).fillna(0)
 for col in ['stable_six_contracted','stable_six_expanded']:close('CAFE_'+col,cmp[col+'_new'],cmp[col+'_ref'],atol=0)
 save(agg,'CAFE_consensus_summary.tsv')
-checks['counts']={'CPP':len(raw),'RNA_libraries':len(vst.columns),'Welch_tests':24,'interaction_tests':4,'correlations':28,'all_checks_passed':True}
+checks['counts']={'CPP':len(raw),'RNA_libraries':len(vst.columns),'Welch_tests':24,'oneway_gene_set_tests':4,'correlations':28,'all_checks_passed':True}
 (O/'verification.json').write_text(json.dumps(checks,indent=2),encoding='utf8');print(json.dumps(checks,indent=2))

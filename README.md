@@ -1,6 +1,6 @@
 # FACHB-416 analysis code
 
-Analysis and figure-generation scripts supporting *Morphological plasticity as a potential buffer for gene-family shifts in a green alga*.
+Analysis and figure-generation scripts supporting *Morphological plasticity reconciles gene-family contraction with environmental responsiveness in a green alga*.
 
 ## Data and setup
 
@@ -21,6 +21,8 @@ The data archive contains a short `README.md` with units and data-specific notes
 
 Run the commands below from the `FACHB416-analysis` directory. Python package requirements are in [requirements.txt](requirements.txt); tested versions are listed in [environment_verified.txt](environment_verified.txt). R and the packages used by each R script must be installed separately.
 
+Code release: **v1.0.1**. This release requires the updated Figshare source-data package.
+
 ## Reproduce statistics
 
 ```sh
@@ -29,7 +31,7 @@ python reproduce_statistics.py --data ../FACHB416-source-data
 Rscript reproduce_growth.R ../FACHB416-source-data
 ```
 
-The Python script rebuilds gene-set scores from the VST matrix and membership table, Welch tests with BH24 adjustment, interaction tests with BH4 adjustment, exact Spearman tests with BH28 adjustment, phenotype ANOVA, CPP, DEG counts and CAFE consensus counts. The R script repeats all 18 final 17-day logistic fits, followed by ANOVA and Tukey comparisons.
+The Python script rebuilds gene-set scores from the VST matrix and membership table, Welch tests with BH24 adjustment, six-condition one-way ANOVAs with BH4 adjustment, exact Spearman tests with BH28 adjustment, phenotype ANOVA, CPP, DEG counts and CAFE consensus counts. The R script repeats all 18 final 17-day logistic fits, followed by ANOVA and Tukey comparisons.
 
 For differential-expression analysis from raw gene counts, install DESeq2 through Bioconductor and run:
 
@@ -64,11 +66,11 @@ R plotting dependencies include ggplot2, patchwork, ragg and base grid; Figure 1
 
 ## Scope and data notes
 
-- Pairwise comparisons use one BH family of 24 tests. Interaction and correlation analyses use separate families of 4 and 28 tests. DESeq2 adjustment is within each contrast.
+- Pairwise comparisons use one BH family of 24 tests. Gene-set ANOVA and correlation analyses use separate families of 4 and 28 tests. DESeq2 adjustment is within each contrast.
 - Upstream methods are retained in `methods/`; see [methods/README.md](methods/README.md) for their external toolchain and input requirements. The Figshare figure-data archive is not a complete copy of every upstream intermediate.
-- Cell dimensions and colony distributions were measured independently. The dimension table contains 1,274 individual-cell records across 18 cultures, without colony-category metadata. Archived plotted culture-volume means differ from direct arithmetic means of those measurements; this discrepancy remains unresolved. Both tables are retained.
+- Cell dimensions are stratified by colony class. The matching Figshare package provides the class-labelled measurements, frequency weights, final culture means and data-specific calculation notes. Use the updated source-data package for this release.
 
-The following command checks measurement counts and dimensions and compares direct cell means with archived plotting values without changing the inputs:
+The following command verifies dimensions, class-weighted culture means and their agreement with the plotting inputs without changing the inputs:
 
 ```sh
 python audit_cell_dimensions.py --data ../FACHB416-source-data
